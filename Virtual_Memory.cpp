@@ -117,6 +117,7 @@ int search_PageTable_by_VDR(unsigned int PageTable[][4], int size, int V, int D,
     vector<int> validPages;
     int i = 0;
     int index;
+    int retVal;
 
     srand(time(NULL))
     for(i = 0; i < size; i++)
@@ -126,28 +127,75 @@ int search_PageTable_by_VDR(unsigned int PageTable[][4], int size, int V, int D,
             validPages.push_back(PageTable[i]);
         }
     }
-    index = rand() % validPages;
-    return validPages[index];
+
+    if(validPages.end() == 0)
+    {
+        retVal = -1;
+    }
+    else
+    {
+        index = rand() % validPages;
+        retVal = validPages[index];
+    }
+    return retVal;
 }
 
 unsigned int select_page_eviction_candidate(unsigned int PageTable[][4], int size)
 {
-    
+    int index = search_PageTable_by_VDR(PageTable[][4], 1, 0, 0);
+    if(index == -1)
+    {
+        index = search_PageTable_by_VDR(PageTable[][4], 1, 1, 0);
+    }
+    if(index == -1)
+    {
+        index = search_PageTable_by_VDR(PageTable[][4], 1, 0, 1);
+    }
+    if(index == -1)
+    {
+        index = search_PageTable_by_VDR(PageTable[][4], 1, 1, 1);
+    }
+
+    return index;
 }
 
 int page_evict(unsigned int PageTable[][4], int page_table_size, unsigned int TLB[][5], int tlb_size, int FrameTable[], int frame_table_size, int vpn)
 {
-
+    int retVal = 0;
+    int i = 0;
+    int frame;
+    while(i < tlb_size)
+    {
+        if(TLB[i][3] == vpn)
+        {
+            retVal += 1;
+            TLB_shootdown(TLB[][5], tlb_size, PageTable[][4], page_table_size, i);
+        }
+        i++;
+    }
+    i = 0;
+    while(i < page_table_size)
 }
 
 int cache_page_in_RAM(unsigned int PageTable[][4], int page_table_size, unsigned int TLB[][4], int tlb_size, unsigned int FrameTable[], int frame_table_size, unsigned int vpn, int read_write)
 {
-
+    
 }
 
 void reset_reference_bits(unsigned int TLB[][5], int tlb_size, unsigned int PageTable[][4], int page_table_size)
 {
+    int i;
+    for(i = 0; i < tlb_size; i++)
+    {
+        TLB[i][2] = 0;
+    }
 
+    i = 0;
+
+    for(i = 0; i < page_table_size; i++)
+    {
+        PageTable[i][2] = 0; 
+    }
 }
 
 void memory_access (unsigned int TLB[][5], int tlb_size, unsigned int PageTable[][4], int page_table_size, unsigned int FrameTable[], int frame_table_size, unsigned int address, int read_write)
