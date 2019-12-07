@@ -179,7 +179,15 @@ int page_evict(unsigned int PageTable[][4], int page_table_size, unsigned int TL
 
 int cache_page_in_RAM(unsigned int PageTable[][4], int page_table_size, unsigned int TLB[][4], int tlb_size, unsigned int FrameTable[], int frame_table_size, unsigned int vpn, int read_write)
 {
-    
+    int h = 0;
+	int old = 0;
+	if (get_available_frame(FrameTable[],frame_table_size)<0)
+	{
+		int h = page_evict(PageTable[][4],page_table_size,TLB[][5],tlb_size,FrameTable[],frame_table_size,vpn);
+	}
+	int old = cache_translation_in_TLB(TLB[][5], tlb_size, PageTable[][4], page_table_size, vpn);
+	
+	return (h+old);
 }
 
 void reset_reference_bits(unsigned int TLB[][5], int tlb_size, unsigned int PageTable[][4], int page_table_size)
@@ -198,7 +206,82 @@ void reset_reference_bits(unsigned int TLB[][5], int tlb_size, unsigned int Page
     }
 }
 
+void updateHits(int hit)
+{
+	int tbh = 0;
+	int tbm = 0;
+	int tbs = 0; 
+	int pth = 0;
+	int ptf = 0;
+	int pge = 0;
+	int hdw = 0;
+
+	if (hit == 20)
+	{
+		tbh++;
+	}
+	if (hit == 19)
+	{
+		pth++;
+	}
+	if (hit == 18)
+	{
+		ptf++;
+	}
+	if (hit != 0)
+	{
+		if (hit == 111)
+		{
+			tbs++;
+			hdw++;
+			pge++;
+		}
+	}
+	if (hit == 21)
+	{
+		cout << "TLB hits:" << tbh;
+		cout << "TLB misses:" << tbm;
+		cout << "TLB hit rate:" << tbh/tbm;
+		cout << "TLB Shootdowns:" << tbs;
+		cout << "TLB writes:" << tbm;
+		cout << "Pg Table accesses:" << tbm;
+		cout << "Pg Table hits:" << pth;
+		cout << "Pg faults:" << ptf;
+		cout << "Pg Table hit rates:" << pth/ptf;
+		cout << "Pg Table eviction:" << pge;
+		cout << "Pg Table writes:" << ptf;
+		cout << "Hard disk reads:" << ptf;
+		cout << "Hard disk writes:" << hdw;
+	}
+}
+
 void memory_access (unsigned int TLB[][5], int tlb_size, unsigned int PageTable[][4], int page_table_size, unsigned int FrameTable[], int frame_table_size, unsigned int address, int read_write)
 {
-    
+    int vpn = address / 1024;
+	int offset = address % 1024;
+
+	if (TLB_lookup(TLB[][5],tlb_size,vpn) < 0)
+	{
+		int hold = 0;
+		if (search_PageTable_by_VDR(PageTable[][4],page_table_size,1,0,0) < 0 || search_PageTable_by_VDR(PageTable[][4], page_table_size, 1, 1, 0) < 0)
+		{
+			updateHits(18);
+			hold = cache_page_in_RAM(PageTable[][4], page_table_size, TLB[][4], tlb_size, FrameTable[], frame_table_size, vpn, read_write);
+			updateHits(hold);
+		}
+		else 
+		{
+			updateHits(19);
+			int h = 0;
+			int old = 0;
+			if (get_available_frame(FrameTable[], frame_table_size) < 0)
+			{
+				 h = page_evict(PageTable[][4], page_table_size, TLB[][5], tlb_size, FrameTable[], frame_table_size, vpn);
+			}
+			 old = cache_translation_in_TLB(TLB[][5], tlb_size, PageTable[][4], page_table_size, vpn);
+			hold = h + old;
+			updateHits(hold);
+		}
+	}
+	updateHits(20);
 }
